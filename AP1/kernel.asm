@@ -1,15 +1,23 @@
 org 0x7e00
 
-jmp start
+global start
 
+    section .data
 memory: times 64 db 0
+
+    section .bss
+
+mem: resb 64
+
+    section .text
 
 start:
     mov ax, 0
     mov si, ax
     mov di, ax
 
-    lea di, [memory]
+    ;lea di, [memory]
+    mov di, mem
 
     mov al, 'A'
     stosb
@@ -19,7 +27,8 @@ start:
     stosb
 
     
-    mov si, memory
+    ;mov si, memory
+    mov si, mem
     cmp byte[si], 0 ;primeiro byte vazio
     
     je vazio
