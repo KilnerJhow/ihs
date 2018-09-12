@@ -1,6 +1,3 @@
-;Author: Mateus Valgueiro (valgueiro - https://github.com/Valgueiro/bootloader)
-;Usado em conjunto com o boot2 para carregar o kernel
-
 org 0x7C00; (offset)0x7c000 + 0x0000
 jmp 0x0000:start; garantir cs == 0x0000
 
