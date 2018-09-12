@@ -1,4 +1,4 @@
-org 0x7c00  ;início do bootsector
+org 0x8600
 
 call clearscreen
 mov ax, 0
@@ -226,7 +226,3 @@ option4 db '|Deletar conta:                4|', 0xA, 0xD, 0
 option5 db '|Listar agencias:              5|', 0xA, 0xD, 0
 option6 db '|Listar contas de uma agencia: 6|', 0xA, 0xD, 0
 trace   db '=================================', 0xA, 0xD, 0
-
-
-times 510 - ($-$$) db 0 ;tamanho do código
-dw 0AA55h   ;assinatura da bios

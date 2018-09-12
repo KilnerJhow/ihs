@@ -1,21 +1,100 @@
 org 0x8600  ;início do bootsector
 
-call clearscreen
-mov ax, 0
-mov si, ax
-mov di, ax
-mov ss, ax
-mov ds, ax
+jmp start
+
+memory TIMES  48*5  DB   0  ; Fazemos um array de 5 posições, onde cada uma possui 46bytes de informação
+;ex: [Nome][T][CPF][T][Ag][T][Conta][T][NewLine]
+                            ; 20 - Nome + 1 Caractere terminador
+                            ; 11 - CPF + 1 Caractere terminador
+                            ; 5 - Agência + 1 Caractere terminador
+                            ; 9 - Conta + 1 Caractere terminador
+
+welcome db 'Bem vindo, selecione a opcao desejada abaixo', 0xA, 0xD, 0 ;0xA - New line, 0xD - Carriage Return, 0 - fim da string
+option1 db '|Cadastrar conta:              1|', 0xA, 0xD, 0
+option2 db '|Buscar conta:                 2|', 0xA, 0xD, 0
+option3 db '|Editar conta:                 3|', 0xA, 0xD, 0
+option4 db '|Deletar conta:                4|', 0xA, 0xD, 0
+option5 db '|Listar agencias:              5|', 0xA, 0xD, 0
+option6 db '|Listar contas de uma agencia: 6|', 0xA, 0xD, 0
+trace   db '=================================', 0xA, 0xD, 0
+err     db '|Erro, opcao invalido           |', 0xA, 0xD, 0
+
+
+
 
 start:
+    mov ax, 0
+    mov si, ax
+    mov di, ax
+    mov ss, ax
+    mov ds, ax
+
+    mov di, memory
+
+    call printWelcomeScreen
 
     call readOption
-    
+
+    mov al, 'o'
+    mov ah, 0x0E
+    int 10h
+
+    mov si, memory
+
+    call printString
+
     pop ax
     mov ah, 0x0E
     int 10h
 
     jmp exit
+
+
+printWelcomeScreen:
+
+    mov si, welcome
+    call printString
+
+    mov si, trace
+    call printString
+
+    mov si, option1
+    call printString
+
+    mov si, trace
+    call printString
+
+    mov si, option2
+    call printString
+
+    mov si, trace
+    call printString
+
+    mov si, option3
+    call printString
+
+    mov si, trace
+    call printString
+
+    mov si, option4
+    call printString
+
+    mov si, trace
+    call printString
+
+    mov si, option5
+    call printString
+
+    mov si, trace
+    call printString
+
+    mov si, option6
+    call printString
+
+    mov si, trace
+    call printString
+
+    ret
 
 
 
@@ -44,13 +123,13 @@ readOption:
         cmp al, 0x08    ;valor do backspace
         je .backspace   ;trata o backspace
 
-        cmp cl, 0x01    ; Lê apenas uma opção
+        cmp cl, 0x01    ; Lê 20 caracteres
         je .loop        ; Caso a opção tenha sido escolhida, espera o enter ou backspace
 
         mov ah, 0x0E    ;função de printar um número na tela
         int 0x10
 
-        push ax         ;salvamos o o tipo escrito na pilha
+        push ax
         inc cl          ;incrementa a quantidade de teclas digitadas
         jmp .loop  
 
@@ -58,6 +137,10 @@ readOption:
 
         cmp cl, 0
         je .loop
+
+        dec di
+        mov byte[di], 0
+
 
         mov ah, 3
         int 0x10
@@ -84,11 +167,7 @@ readOption:
     .done:
         
         cmp cl, 0
-        je .loop
-
-        pop ax
-        mov ah, 0x0E
-        int 10h
+        je .loop        
 
         cmp al, 49      ;tecla 1
         je .option1
@@ -116,6 +195,10 @@ readOption:
         jmp .loop
 
     .option1:
+
+        mov al, '1'
+        mov ah, 0x0E
+        int 10h
 
         call readName
         jmp .exit
@@ -145,13 +228,13 @@ readName:
         cmp al, 0x08    ;valor do backspace
         je .backspace   ;trata o backspace
 
-        cmp cl, 0x0    ; Lê apenas uma opção
+        cmp cl, 0x14    ; Lê apenas uma opção
         je .loop        ; Caso a opção tenha sido escolhida, espera o enter ou backspace
 
         mov ah, 0x0E    ;função de printar um número na tela
         int 0x10
 
-        push ax         ;salvamos o o tipo escrito na pilha
+        stosb           ;salvamos o caractere
         inc cl          ;incrementa a quantidade de teclas digitadas
         jmp .loop  
 
@@ -182,6 +265,9 @@ readName:
         pop ax
         jmp .loop
 
+    .done:
+        ret
+
 printString:
 
     mov cl, 0
@@ -201,21 +287,3 @@ printString:
         ret
 
 exit:
-
-
-memory TIMES  48*5  DB   0  ; Fazemos um array de 5 posições, onde cada uma possui 46bytes de informação
-;ex: [Nome][T][CPF][T][Ag][T][Conta][T][NewLine]
-                            ; 20 - Nome + 1 Caractere terminador
-                            ; 11 - CPF + 1 Caractere terminador
-                            ; 5 - Agência + 1 Caractere terminador
-                            ; 9 - Conta + 1 Caractere terminador
-
-welcome db 'Bem vindo, selecione a opcao desejada abaixo', 0xA, 0xD, 0 ;0xA - New line, 0xD - Carriage Return, 0 - fim da string
-option1 db '|Cadastrar conta:              1|', 0xA, 0xD, 0
-option2 db '|Buscar conta:                 2|', 0xA, 0xD, 0
-option3 db '|Editar conta:                 3|', 0xA, 0xD, 0
-option4 db '|Deletar conta:                4|', 0xA, 0xD, 0
-option5 db '|Listar agencias:              5|', 0xA, 0xD, 0
-option6 db '|Listar contas de uma agencia: 6|', 0xA, 0xD, 0
-trace   db '=================================', 0xA, 0xD, 0
-err     db '|Erro, opcao invalido           |', 0xA, 0xD, 0
