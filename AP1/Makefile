@@ -1,55 +1,50 @@
-bootdisk=disk.img
-blocksize=512
-disksize=100
+#primeiro estágio
+boot1_file = boot1
 
-boot1=boot1
+#segundo estágio
+boot2_file = boot2
+boot2_pos = 1
+boot2_size = 1
 
-# preencha esses valores para rodar o segundo estágio do bootloader
-boot2=boot2
-boot2pos=1
-boot2size=1
+#kernel
+kernel_file = kernel
+kernel_pos = 2
+kernel_size = 20
 
-# preencha esses valores para rodar o kernel
-kernel=kernel
-kernelpos=2
-kernelsize=4
+boot_disk = disk.img
+block_size = 512
+disk_size = 100
 
-file = $(bootdisk)
+nasm_flags = -f bin
+qemu_flags = -fda
 
-# adicionem os targets do kernel e do segundo estágio para usar o make all com eles
+all: create_disk boot1_only boot2_only kernel_only write_boot1 write_boot2 write_kernel launch_qemu clean
 
-all: clean mydisk boot1 write_boot1 boot2 write_boot2 kernel write_kernel hexdump launchqemu
+create_disk:
+	@dd if=/dev/zero of=$(boot_disk) bs=$(block_size) count=$(disk_size) status=noxfer
 
-mydisk: 
-	dd if=/dev/zero of=$(bootdisk) bs=$(blocksize) count=$(disksize) status=noxfer
+boot1_only:
+	@nasm $(nasm_flags) $(boot1_file).asm -o $(boot1_file).bin
 
-boot1: 
-	nasm -f bin $(boot1).asm -o $(boot1).bin 
+boot2_only:
+	@nasm $(nasm_flags) $(boot2_file).asm -o $(boot2_file).bin
 
-boot2:
-	nasm -f bin $(boot2).asm -o $(boot2).bin 
-
-
-kernel:
-	nasm -f bin $(kernel).asm -o $(kernel).bin
+kernel_only:
+	@nasm $(nasm_flags) $(kernel_file).asm -o $(kernel_file).bin
 
 write_boot1:
-	dd if=$(boot1).bin of=$(bootdisk) bs=$(blocksize) count=1 conv=notrunc status=noxfer
+	@dd if=$(boot1_file).bin of=$(boot_disk) bs=$(block_size) count=1 conv=notrunc status=noxfer
 
 write_boot2:
-	dd if=$(boot2).bin of=$(bootdisk) bs=$(blocksize) seek=$(boot2pos) count=$(boot2size) conv=notrunc status=noxfer
+	@dd if=$(boot2_file).bin of=$(boot_disk) bs=$(block_size) seek=$(boot2_pos) count=$(boot2_size) conv=notrunc status=noxfer
 
 write_kernel:
-	dd if=$(kernel).bin of=$(bootdisk) bs=$(blocksize) seek=$(kernelpos) count=$(kernelsize) conv=notrunc
+	@dd if=$(kernel_file).bin of=$(boot_disk) bs=$(block_size) seek=$(kernel_pos) count=$(kernel_size) conv=notrunc
 
-hexdump:
-	hexdump $(file)
+launch_qemu:
+	clear
+	@qemu-system-i386 $(qemu_flags) $(boot_disk)
 
-disasm:
-	ndisasm $(boot1).asm
-
-launchqemu:
-	qemu-system-i386 -fda $(bootdisk)
-	
 clean:
-	rm -f *.bin $(bootdisk) *~
+	@rm -f *.bin $(boot_disk) *~
+	clear

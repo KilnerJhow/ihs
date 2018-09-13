@@ -12,6 +12,7 @@ start:
     mov di, ax
     mov ss, ax
     mov ds, ax
+    mov es, ax
 
     call printWelcomeScreen
 

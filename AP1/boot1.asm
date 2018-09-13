@@ -1,39 +1,38 @@
-org 0x7C00; (offset)0x7c000 + 0x0000
-jmp 0x0000:start; garantir cs == 0x0000
+org 0x7c00
+jmp 0x0000:start
 
 start:
-	xor ax, ax
-	mov ds, ax
+    xor ax, ax
+    mov ds, ax
+    mov es, ax
 
-;Resetando o disco floppy, for�ando tamb�m a setar todas as trilhas para 0
+    mov ax, 0x50 ;0x50<<1 = 0x500 (início de boot2.asm)
+    mov es, ax
+    xor bx, bx   ;posição = es<<1+bx
+
+    jmp reset
+
 reset:
-	mov ah,0		
-	mov dl,0		
-	int 13h			
-	jc reset		;em caso de erro, tenta de novo, 
+    mov ah, 00h ;reseta o controlador de disco
+    mov dl, 0   ;floppy disk
+    int 13h
 
-;Carrega na memoria o boot2
-load_Boot2:
-;Setando a posi��o do disco onde boot2.asm foi armazenado(ES:BX = [0x500:0x0])
-	mov ax,0x50		;0x50<<1 + 0 = 0x500
-	mov es,ax
-	xor bx,bx		;Zerando o offset
+    jc reset    ;se o acesso falhar, tenta novamente
 
-;Setando a posi��o da Ram onde o boot2 ser� lido
-	mov ah, 0x02	;comando de ler setor do disco
-	mov al,1		;quantidade de blocos ocupados por boot2
-	mov dl,0		;drive floppy
+    jmp load
 
-;Usaremos as seguintes posi��es na memoria:
-	mov ch,0		;trilha 0
-	mov cl,2		;setor 2
-	mov dh,0		;cabeca 0
-	int 13h
-	jc load_Boot2	;em caso de erro, tenta de novo
+load:
+    mov ah, 02h ;lê um setor do disco
+    mov al, 1   ;quantidade de setores ocupados pelo boot2
+    mov ch, 0   ;track 0
+    mov cl, 2   ;sector 2
+    mov dh, 0   ;head 0
+    mov dl, 0   ;drive 0
+    int 13h
 
-break:	
-	jmp 0x500 		;Pula para a posi��o carregada
+    jc load     ;se o acesso falhar, tenta novamente
 
-end: 
-times 510-($-$$) db 0		; preenche o resto do setor com zeros 
-dw 0xaa55					; coloca a assinatura de boot no final do setor
+    jmp 0x500   ;pula para o setor de endereco 0x500 (start do boot2)
+
+times 510-($-$$) db 0 ;512 bytes
+dw 0xaa55             ;assinatura

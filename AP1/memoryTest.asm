@@ -15,6 +15,8 @@ start:
     mov ax, 0
     mov si, ax
     mov di, ax
+    mov ds, ax
+    mov es, ax
 
     ;lea di, [memory]
     ;lea di, [mem]
@@ -28,7 +30,7 @@ start:
     stosb
 
     
-    mov si, mem
+    mov si, mem     ;testamos pra ver se foi salvo na memória
     cmp byte[si], 0 ;primeiro byte vazio
     
     je vazio
@@ -44,7 +46,7 @@ start:
 
 
 vazio:
-    mov al, 'v'
+    mov al, 'v' ;o primeiro byte está vazio
     mov ah, 0x0E
     int 10h
 
