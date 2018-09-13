@@ -7,6 +7,7 @@ jmp 0x0000:start
 start:
 
     call clearscreen
+
     mov ax, 0
     mov si, ax
     mov di, ax
@@ -19,7 +20,32 @@ start:
 
     mov si, memory
     call printString
+    call new_line
 
+    add si, 21
+    call printString
+    call new_line
+
+    add si, 32
+    call printString
+    call new_line
+
+    add si, 41
+    call printString
+    call new_line
+
+    jmp start
+
+new_line:
+
+    mov ah, 0x0E
+    mov al, 0xA
+    int 10h
+
+    mov al, 0xD
+    int 10h
+
+    ret
 
 debug: 
     ;debug
@@ -162,35 +188,36 @@ readOption:
         cmp cl, 0
         je .loop        
 
-        cmp al, 49      ;tecla 1
+        cmp al, '1'      ;tecla 1
         je .option1
 
-        cmp al, 50      ;tecla 2
+        cmp al, '2'     ;tecla 2
         je .option2
 
-        cmp al, 51      ;tecla 3
+        cmp al, '3'     ;tecla 3
         je .option3
 
-        cmp al, 52      ;tecla 4
+        cmp al, '4'      ;tecla 4
         je .option4  
 
-        cmp al, 53      ;tecla 5
+        cmp al, '5'      ;tecla 5
         je .option5
 
-        cmp al, 54      ;tecla 6
+        cmp al, '6'      ;tecla 6
         je .option6     ;tecla 6
 
         
     .err:
-
+        
+        call clearscreen
+        call printWelcomeScreen
         mov si, err
         call printString
         jmp .loop
 
     .option1:
-        mov di, memory
+        
         call registerAcc
-        mov ax, 1
         jmp .exit
 
     .option2:
@@ -208,25 +235,43 @@ readOption:
 
 registerAcc:
 
+    push ax
+    push bx
+    push cx
+
+    call findPos        ;retorna em ax a posição de ínicio da conta
+
+    mov di, memory      ;pega a base do vetor
+    add di, ax          ;soma com o offset da conta
+
     call clearscreen
     mov si, insertName
     call printString
     call _insertName
 
+
+    add di, 21
     call clearscreen
     mov si, insertCPF
     call printString
     call _insertCPF
 
+
+    add di, 32
     call clearscreen
     mov si, insertConta
     call printString
     call _insertConta
 
+    add di, 41
     call clearscreen
-    mov si, insertCPF
+    mov si, insertAg
     call printString
     call _insertAg
+
+    pop cx
+    pop bx
+    pop ax
 
     ret
 
@@ -539,6 +584,63 @@ _insertAg:
         pop ax
         ret
 
+findPos:
+    push bx
+
+    mov bx, 0
+
+    mov bl, tableOccuped
+
+    cmp bl, 00000001b           ;Checamos se a pos está ocupada
+    jnz .op1                    ;Se não estiver ocupada, a flag ZF não irá ser setada e ele irá pular para a condição
+
+    cmp bl, 00000010b
+    jnz .op2
+
+    cmp bl, 00000100b
+    jnz .op3
+
+    cmp bl, 00001000b
+    jnz .op4
+
+    cmp bl, 00010000b
+    jnz .op5
+
+    jmp .cheio
+
+    .op1:
+
+        mov ax, 0
+        jmp .exit
+    
+    .op2:
+
+        mov ax, 48
+        jmp .exit
+    
+    .op3:
+
+        mov ax, 96
+        jmp .exit
+    
+    .op4:
+
+        mov ax, 144
+        jmp .exit
+
+    .op5
+        mov ax, 192
+        jmp .exit
+
+    .cheio
+
+        mov ax, 255
+
+    .exit:
+
+        pop bx
+        ret
+
 
 printString:
 
@@ -569,39 +671,36 @@ printString:
 
 exit:
 
-    mov ah, 0x0E
-    mov al, 'E'
-    int 10h
+    jmp exit
 
     section .data
-;memory times 64 db ' '  ; (48*5) Fazemos um array de 5 posições, onde cada uma possui 48 bytes de informação
+
+memory: times 240 db 0 ;reserva 240 bytes inicializado com 0
+tableOccuped: times 1 db 0 ; tabela onde marcamos cada bit do byte como ocupado (1) ou não (0)
+
+welcome:  db 'Bem vindo, selecione a opcao desejada abaixo', 0xA, 0xD, 0 ;0xA - New line, 0xD - Carriage Return, 0 - fim da string
+option1:  db '|Cadastrar conta:              1|', 0xA, 0xD, 0
+option2:  db '|Buscar conta:                 2|', 0xA, 0xD, 0
+option3:  db '|Editar conta:                 3|', 0xA, 0xD, 0
+option4:  db '|Deletar conta:                4|', 0xA, 0xD, 0
+option5:  db '|Listar agencias:              5|', 0xA, 0xD, 0
+option6:  db '|Listar contas de uma agencia: 6|', 0xA, 0xD, 0
+trace:    db '=================================', 0xA, 0xD, 0
+insertName:   db 'Insira seu nome:            ', 0xA, 0xD, 0
+insertCPF:    db 'Insira seu CPF:            ', 0xA, 0xD, 0
+insertConta:  db 'Insira sua conta:            ', 0xA, 0xD, 0
+insertAg:     db 'Insira sua agencia:            ', 0xA, 0xD, 0
+err:      db '|Erro, opcao invalida           |', 0xA, 0xD, 0
+
+
+    section .bss
+
+;memory: resb 240                ; reserva 240 bytes sem inicialização
 ;ex: [Nome][T][CPF][T][Ag][T][Conta][T][NewLine] 
                             ; 20 - Nome + 1 Caractere terminador
                             ; 11 - CPF + 1 Caractere terminador
                             ; 5 - Agência + 1 Caractere terminador
                             ; 9 - Conta + 1 Caractere terminador
-
-welcome db 'Bem vindo, selecione a opcao desejada abaixo', 0xA, 0xD, 0 ;0xA - New line, 0xD - Carriage Return, 0 - fim da string
-option1 db '|Cadastrar conta:              1|', 0xA, 0xD, 0
-option2 db '|Buscar conta:                 2|', 0xA, 0xD, 0
-option3 db '|Editar conta:                 3|', 0xA, 0xD, 0
-option4 db '|Deletar conta:                4|', 0xA, 0xD, 0
-option5 db '|Listar agencias:              5|', 0xA, 0xD, 0
-option6 db '|Listar contas de uma agencia: 6|', 0xA, 0xD, 0
-trace   db '=================================', 0xA, 0xD, 0
-insertName  db 'Insira seu nome:            ', 0xA, 0xD, 0
-insertCPF   db 'Insira seu CPF:            ', 0xA, 0xD, 0
-insertConta db 'Insira sua conta:            ', 0xA, 0xD, 0
-insertAg    db 'Insira sua agencia:            ', 0xA, 0xD, 0
-err     db '|Erro, opcao invalida           |', 0xA, 0xD, 0
-
-zero db 'zero', 0xA, 0xD, 0
-
-
-    section .bss
-
-memory: resb 240                ; reserva 240 bytes sem inicialização
-;
 ; 20 - Nome
 ; 11 - CPF
 ; 5 - Ag
